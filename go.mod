@@ -1,4 +1,4 @@
-module gin-mini-starter
+module macaoapply-auto
 
 go 1.20
 

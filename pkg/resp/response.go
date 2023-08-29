@@ -2,7 +2,7 @@ package resp
 
 import (
 	"encoding/json"
-	"gin-mini-starter/pkg/encode"
+	"macaoapply-auto/pkg/encode"
 
 	"github.com/gin-gonic/gin"
 )

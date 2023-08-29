@@ -1,8 +1,8 @@
 package router
 
 import (
-	v1 "gin-mini-starter/internal/api/v1"
-	"gin-mini-starter/internal/middleware"
+	v1 "macaoapply-auto/internal/api/v1"
+	"macaoapply-auto/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )

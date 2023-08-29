@@ -1,9 +1,9 @@
 package main
 
 import (
-	"gin-mini-starter/internal/model"
-	"gin-mini-starter/internal/router"
 	"log"
+	"macaoapply-auto/internal/model"
+	"macaoapply-auto/internal/router"
 )
 
 func init() {

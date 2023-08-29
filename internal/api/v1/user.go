@@ -1,9 +1,9 @@
 package v1
 
 import (
-	"gin-mini-starter/internal/middleware"
-	"gin-mini-starter/internal/model"
-	"gin-mini-starter/pkg/resp"
+	"macaoapply-auto/internal/middleware"
+	"macaoapply-auto/internal/model"
+	"macaoapply-auto/pkg/resp"
 
 	"github.com/gin-gonic/gin"
 )
