@@ -17,6 +17,7 @@ bin/*
 
 # Config
 config.yml
+config.json
 log.txt
 .idea
 *.db
