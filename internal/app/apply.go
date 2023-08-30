@@ -2,6 +2,7 @@ package app
 
 import (
 	"log"
+	"macaoapply-auto/internal/cache"
 	"macaoapply-auto/internal/client"
 	"time"
 
@@ -56,14 +57,62 @@ type AppointmentInfo struct {
 	appointmentDate int64
 }
 
-// 执行预约
-// func DoAppointment(data AppointmentInfo) error {
-// 	// 1. 获取 form instance id
-// 	formInstance, err := getPassQualification(data.PlateNumber)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	// 2. 处理验证码
-// 	err = handleCaptcha(formInstance)
+func DoAppointment(data AppointmentInfo) error {
+	// 1. 获取 form instance id
+	formInstance, err := getPassQualification(data.PlateNumber)
+	if err != nil {
+		return err
+	}
+	// 2. 处理验证码
+	captchaData := handelCaptcha(formInstance.FormInstanceID)
+	// 3. validationPassBooking
+	err = validationPassBooking(&formInstance, captchaData, &data)
+	if err != nil {
+		return err
+	}
+	// 4. doAppointment
+	err = createPassAppointment(&formInstance, captchaData, &data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-// }
+func validationPassBooking(formInstance *FormInstance, captchaData cache.CaptchaData, appointmentInfo *AppointmentInfo) error {
+	resp, err := client.RequestWithRetry("POST", "before/sys/appointment/validationPassBooking", jwt.MapClaims{
+		"formInstanceId":      formInstance.FormInstanceID,
+		"appointmentType":     "passBooking",
+		"direction":           "S",
+		"plateNumber":         appointmentInfo.PlateNumber,
+		"appointmentDate":     appointmentInfo.appointmentDate,
+		"verifyUploadData":    captchaData["verifyUploadData"],
+		"checkCaptchaBoolean": true,
+		"thisCheckCaptchaId":  captchaData["id"],
+	})
+	if err != nil {
+		log.Println("验证预约失败：" + err.Error())
+		return err
+	}
+	log.Println(resp)
+	return nil
+}
+
+func createPassAppointment(formInstance *FormInstance, captchaData cache.CaptchaData, appointmentInfo *AppointmentInfo) error {
+	resp, err := client.RequestWithRetry("POST", "before/sys/appointment/createPassAppointment", jwt.MapClaims{
+		"formInstanceId":      formInstance.FormInstanceID,
+		"appointmentType":     "passBooking",
+		"direction":           "S",
+		"plateNumber":         appointmentInfo.PlateNumber,
+		"appointmentDate":     appointmentInfo.appointmentDate,
+		"verifyUploadData":    captchaData["verifyUploadData"],
+		"checkCaptchaBoolean": true,
+		"thisCheckCaptchaId":  captchaData["id"],
+	})
+	if err != nil {
+		log.Println("预约失败：" + err.Error())
+		return err
+	}
+	log.Println("预约成功！服务器返回数据：", resp)
+	// log.Println(resp)
+	return nil
+}

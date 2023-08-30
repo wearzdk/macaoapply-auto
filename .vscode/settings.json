@@ -1,5 +1,5 @@
 {
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--fast"],
-  "cSpell.words": ["macaoapply", "resty"]
+  "cSpell.words": ["macaoapply", "resty", "truetype"]
 }

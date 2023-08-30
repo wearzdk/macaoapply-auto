@@ -28,6 +28,14 @@ func init() {
 }
 
 func GetPicVal(data []byte) *CJYResp {
+	return GetPicRes(data, "1004")
+}
+
+func GetPicPos(data []byte) *CJYResp {
+	return GetPicRes(data, "9101")
+}
+
+func GetPicRes(data []byte, codeType string) *CJYResp {
 	url := "https://upload.chaojiying.net/Upload/Processing.php"
 	var dataBase64 string
 	dataBase64 = base64.StdEncoding.EncodeToString(data)
@@ -36,7 +44,7 @@ func GetPicVal(data []byte) *CJYResp {
 			"user":        cjyConf.Username,
 			"pass2":       cjyConf.Password,
 			"softid":      cjyConf.SoftId,
-			"codetype":    "1004",
+			"codetype":    codeType,
 			"file_base64": dataBase64,
 		}).
 		Post(url)

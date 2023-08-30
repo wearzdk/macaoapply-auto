@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"macaoapply-auto/internal/cache"
 	"macaoapply-auto/pkg/config"
 	"net/http"
 	"time"
@@ -39,7 +40,7 @@ func genIss() string {
 func init() {
 	client = resty.New()
 	requestCount = 0
-	client.SetTimeout(5 * time.Second)
+	client.SetTimeout(20 * time.Second)
 	client.SetHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36")
 	client.SetHeader("Accept", "application/json, text/javascript, */*; q=0.01")
 	client.SetHeader("Accept-Language", "zh-CN,zh;q=0.9")
@@ -151,6 +152,21 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 	code := gjson.GetBytes(resp.Body(), "responseCode").Int()
 	msg := gjson.GetBytes(resp.Body(), "responseMessage").String()
 	if code != 200 {
+		// 错误处理
+		// 80x 重新登录
+		if code == 801 || code == 802 || code == 803 {
+			log.Println("登录过期，重新登录")
+			// 重新登录
+			Login()
+			// 重新请求
+			return Request(method, url, data)
+		}
+		// 70x 验证码
+		if code == 701 || code == 702 || code == 703 {
+			log.Println("验证码错误，清除验证码缓存")
+			// 清除验证码缓存
+
+		}
 		return "", fmt.Errorf("请求失败: %s", msg)
 	}
 	requestCount++
@@ -162,28 +178,28 @@ func RequestWithRetry(method string, url string, data jwt.MapClaims) (string, er
 		resp, err := Request(method, url, data)
 		if err != nil {
 			log.Println("请求失败，重试中...")
+			// 重试 1s
+			time.Sleep(time.Second)
 			continue
 		}
 		return resp, nil
 	}
-	return "", fmt.Errorf("请求失败")
+	return "", fmt.Errorf("10次请求失败 停止")
 }
 
-var cache map[string]string
-
 func RequestWithCache(method string, url string, data jwt.MapClaims) (string, error) {
-	if cache == nil {
-		cache = make(map[string]string)
+	if cache.RequestCache == nil {
+		cache.RequestCache = make(map[string]string)
 	}
-	if cache[url] != "" {
+	if cache.RequestCache[url] != "" {
 		log.Println("缓存命中")
-		return cache[url], nil
+		return cache.RequestCache[url], nil
 	}
 	resp, err := RequestWithRetry(method, url, data)
 	if err != nil {
 		return "", err
 	}
-	cache[url] = resp
+	cache.RequestCache[url] = resp
 	return resp, nil
 }
 
