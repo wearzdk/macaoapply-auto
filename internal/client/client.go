@@ -11,6 +11,7 @@ import (
 	"macaoapply-auto/internal/cache"
 	"macaoapply-auto/pkg/config"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -165,7 +166,7 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 		if code == 701 || code == 702 || code == 703 {
 			log.Println("验证码错误，清除验证码缓存")
 			// 清除验证码缓存
-
+			cache.ClearCaptchaCache()
 		}
 		return "", fmt.Errorf("请求失败: %s", msg)
 	}
@@ -173,18 +174,27 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 	return gjson.GetBytes(resp.Body(), "responseResult").Raw, nil
 }
 
+const TimeOutErrText = "Client.Timeout exceeded while awaiting headers"
+
 func RequestWithRetry(method string, url string, data jwt.MapClaims) (string, error) {
-	for i := 0; i < 10; i++ {
-		resp, err := Request(method, url, data)
+	var err error
+	var resp string
+	for i := 0; i < 5; i++ {
+		resp, err = Request(method, url, data)
 		if err != nil {
-			log.Println("请求失败，重试中...")
+			// 如果不是超时错误，直接返回
+			errText := err.Error()
+			if !strings.Contains(errText, TimeOutErrText) {
+				return "", err
+			}
+			log.Println("请求超时... 2s后重试")
 			// 重试 1s
-			time.Sleep(time.Second)
+			time.Sleep(2 * time.Second)
 			continue
 		}
 		return resp, nil
 	}
-	return "", fmt.Errorf("10次请求失败 停止")
+	return "", err
 }
 
 func RequestWithCache(method string, url string, data jwt.MapClaims) (string, error) {
@@ -216,10 +226,6 @@ func IsLogin() bool {
 	// token
 	token := GetToken()
 	if token == nil {
-		return false
-	}
-	// 如果距离过期时间不足1小时，重新登录
-	if token.Expires.Sub(time.Now()) < time.Hour {
 		return false
 	}
 	return true

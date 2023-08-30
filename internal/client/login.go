@@ -37,7 +37,7 @@ func Login() {
 	log.Println("验证码：" + cjyResp.PicStr)
 
 	// 登录
-	resp, err := RequestWithRetry("POST", "before/login", jwt.MapClaims{
+	resp, err := Request("POST", "before/login", jwt.MapClaims{
 		"accountNo":             userConf.Username,
 		"password":              userConf.Password,
 		"verificationCode":      cjyResp.PicStr,

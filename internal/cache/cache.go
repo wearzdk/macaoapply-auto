@@ -9,19 +9,19 @@ type CaptchaData map[string]interface{}
 
 var CaptchaCache CaptchaData
 
-func clearCaptchaCache() {
+func ClearCaptchaCache() {
 	CaptchaCache = nil
 }
 
 var RequestCache map[string]string
 
-func clearRequestCache() {
+func ClearRequestCache() {
 	RequestCache = nil
 }
 
-func clearAllCache() {
-	clearCaptchaCache()
-	clearRequestCache()
+func ClearAllCache() {
+	ClearCaptchaCache()
+	ClearRequestCache()
 	log.Println("5min 清除缓存")
 }
 
@@ -30,7 +30,7 @@ func init() {
 	go func() {
 		for {
 			time.Sleep(5 * time.Minute)
-			clearAllCache()
+			ClearAllCache()
 		}
 	}()
 }

@@ -4,6 +4,7 @@ import (
 	"log"
 	"macaoapply-auto/internal/cache"
 	"macaoapply-auto/internal/client"
+	"macaoapply-auto/pkg/config"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,7 +19,7 @@ type AppointmentDate struct {
 }
 
 func GetAppointmentDateList() ([]AppointmentDate, error) {
-	resp, err := client.Request("POST", "before/sys/appointment/getAppointmentDate", jwt.MapClaims{
+	resp, err := client.RequestWithRetry("POST", "before/sys/appointment/getAppointmentDate", jwt.MapClaims{
 		"appointmentType": "passBooking",
 		"direction":       "S",
 	})
@@ -52,12 +53,7 @@ func CheckAppointmentListHasAvailable(list []AppointmentDate, date string) bool 
 	return false
 }
 
-type AppointmentInfo struct {
-	PlateNumber     string
-	appointmentDate int64
-}
-
-func DoAppointment(data AppointmentInfo) error {
+func DoAppointment(data config.AppointmentOption) error {
 	// 1. 获取 form instance id
 	formInstance, err := getPassQualification(data.PlateNumber)
 	if err != nil {
@@ -78,13 +74,13 @@ func DoAppointment(data AppointmentInfo) error {
 	return nil
 }
 
-func validationPassBooking(formInstance *FormInstance, captchaData cache.CaptchaData, appointmentInfo *AppointmentInfo) error {
+func validationPassBooking(formInstance *FormInstance, captchaData cache.CaptchaData, appointmentInfo *config.AppointmentOption) error {
 	resp, err := client.RequestWithRetry("POST", "before/sys/appointment/validationPassBooking", jwt.MapClaims{
 		"formInstanceId":      formInstance.FormInstanceID,
 		"appointmentType":     "passBooking",
 		"direction":           "S",
 		"plateNumber":         appointmentInfo.PlateNumber,
-		"appointmentDate":     appointmentInfo.appointmentDate,
+		"appointmentDate":     appointmentInfo.AppointmentDate,
 		"verifyUploadData":    captchaData["verifyUploadData"],
 		"checkCaptchaBoolean": true,
 		"thisCheckCaptchaId":  captchaData["id"],
@@ -97,13 +93,13 @@ func validationPassBooking(formInstance *FormInstance, captchaData cache.Captcha
 	return nil
 }
 
-func createPassAppointment(formInstance *FormInstance, captchaData cache.CaptchaData, appointmentInfo *AppointmentInfo) error {
+func createPassAppointment(formInstance *FormInstance, captchaData cache.CaptchaData, appointmentInfo *config.AppointmentOption) error {
 	resp, err := client.RequestWithRetry("POST", "before/sys/appointment/createPassAppointment", jwt.MapClaims{
 		"formInstanceId":      formInstance.FormInstanceID,
 		"appointmentType":     "passBooking",
 		"direction":           "S",
 		"plateNumber":         appointmentInfo.PlateNumber,
-		"appointmentDate":     appointmentInfo.appointmentDate,
+		"appointmentDate":     appointmentInfo.AppointmentDate,
 		"verifyUploadData":    captchaData["verifyUploadData"],
 		"checkCaptchaBoolean": true,
 		"thisCheckCaptchaId":  captchaData["id"],

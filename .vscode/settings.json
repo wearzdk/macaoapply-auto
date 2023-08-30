@@ -1,5 +1,14 @@
 {
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--fast"],
-  "cSpell.words": ["macaoapply", "resty", "truetype"]
+  "cSpell.words": ["macaoapply", "resty", "truetype"],
+  "vite.autoStart": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "files.associations": {
+    "*.css": "postcss"
+  },
+  "unocss.root": ["web"],
+  "typescript.tsdk": "web/node_modules/typescript/lib"
 }

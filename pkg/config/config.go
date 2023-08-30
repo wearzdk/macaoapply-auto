@@ -22,28 +22,23 @@ type UserOption struct {
 	Cookies  []http.Cookie `json:"cookies,omitempty"`
 }
 
+// 预约配置
+type AppointmentOption struct {
+	PlateNumber     string `json:"plateNumber,omitempty"`
+	AppointmentDate int64  `json:"appointmentDate,omitempty"`
+}
+
 type Option struct {
-	CJYOption  `json:"cjy,omitempty"`
-	UserOption `json:"user,omitempty"`
+	CJYOption         `json:"cjy,omitempty"`
+	UserOption        `json:"user,omitempty"`
+	AppointmentOption `json:"appointment,omitempty"`
 }
 
 var Config Option
 
 func init() {
 	// 初始化
-	Config = Option{
-		CJYOption: CJYOption{
-			Username: "",
-			Password: "",
-			SoftId:   "",
-		},
-		UserOption: UserOption{
-			Username: "",
-			Password: "",
-			Iss:      "",
-			Cookies:  make([]http.Cookie, 0),
-		},
-	}
+	Config = Option{}
 	// 在配置中读取
 	file := FileReading("config.json")
 	if file != nil {
