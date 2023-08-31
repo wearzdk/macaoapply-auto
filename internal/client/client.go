@@ -237,13 +237,18 @@ func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, er
 	var err error
 	var ch = make(chan string, threadCount)
 	for i := 0; i < threadCount; i++ {
-		go func() {
+		// map不是线程安全的，所以这里需要复制一份
+		dataCopy := make(jwt.MapClaims)
+		for k, v := range data {
+			dataCopy[k] = v
+		}
+		go func(data jwt.MapClaims) {
 			resp, err = RequestWithRetry(method, url, data)
 			if err != nil {
 				log.Println("请求失败: ", err)
 			}
 			ch <- resp
-		}()
+		}(dataCopy)
 	}
 	for i := 0; i < threadCount; i++ {
 		resp = <-ch
