@@ -24,6 +24,9 @@ var client *resty.Client
 // 累计请求次数
 var requestCount int
 
+// 慢网络检测
+var isSlowNetwork = false
+
 func genIss() string {
 	uuid := make([]byte, 16)
 	_, err := rand.Read(uuid)
@@ -41,7 +44,7 @@ func genIss() string {
 func init() {
 	client = resty.New()
 	requestCount = 0
-	client.SetTimeout(20 * time.Second)
+	client.SetTimeout(140 * time.Second)
 	client.SetHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36")
 	client.SetHeader("Accept", "application/json, text/javascript, */*; q=0.01")
 	client.SetHeader("Accept-Language", "zh-CN,zh;q=0.9")
@@ -129,6 +132,8 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 
 	jwtStr := getJwtToken(data)
 	// log.Println("jwtStr: " + jwtStr)
+	// 请求开始时间
+	startTime := time.Now()
 
 	var err error
 	var resp *resty.Response
@@ -171,6 +176,18 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 		return "", fmt.Errorf("请求失败: %s", msg)
 	}
 	requestCount++
+	// 请求结束时间
+	endTime := time.Now()
+	// 请求耗时
+	costTime := endTime.Sub(startTime)
+	log.Println("请求耗时: ", costTime)
+	// 请求耗时超过 10s 认为是慢网络
+	if costTime > 10*time.Second {
+		isSlowNetwork = true
+	} else {
+		isSlowNetwork = false
+	}
+
 	return gjson.GetBytes(resp.Body(), "responseResult").Raw, nil
 }
 
@@ -211,6 +228,39 @@ func RequestWithCache(method string, url string, data jwt.MapClaims) (string, er
 	}
 	cache.RequestCache[url] = resp
 	return resp, nil
+}
+
+// 针对慢网络-多线程请求
+func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, error) {
+	const threadCount = 8
+	var resp string
+	var err error
+	var ch = make(chan string, threadCount)
+	for i := 0; i < threadCount; i++ {
+		go func() {
+			resp, err = RequestWithRetry(method, url, data)
+			if err != nil {
+				log.Println("请求失败: ", err)
+			}
+			ch <- resp
+		}()
+	}
+	for i := 0; i < threadCount; i++ {
+		resp = <-ch
+		if resp != "" {
+			break
+		}
+	}
+	return resp, err
+}
+
+// 自动选择
+func RequestAuto(method string, url string, data jwt.MapClaims) (string, error) {
+	if isSlowNetwork {
+		log.Println("检测到慢网络，使用多线程请求")
+		return RequestWithMulti(method, url, data)
+	}
+	return RequestWithRetry(method, url, data)
 }
 
 func GetToken() *http.Cookie {

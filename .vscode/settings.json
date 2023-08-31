@@ -10,5 +10,9 @@
     "*.css": "postcss"
   },
   "unocss.root": ["web"],
-  "typescript.tsdk": "web/node_modules/typescript/lib"
+  "typescript.tsdk": "web/node_modules/typescript/lib",
+  "[makefile]": {
+    "editor.insertSpaces": false,
+    "editor.detectIndentation": false
+  }
 }

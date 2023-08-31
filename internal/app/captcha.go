@@ -24,7 +24,7 @@ type ComplexImageReturn struct {
 }
 
 func getPassBookingVerifyComplexImage() (ComplexImageReturn, error) {
-	resp, err := client.Request("GET", "before/sys/captcha/getPassBookingVerifyComplexImage", nil)
+	resp, err := client.RequestAuto("GET", "before/sys/captcha/getPassBookingVerifyComplexImage", nil)
 	if err != nil {
 		log.Println("获取滑动验证码失败：" + err.Error())
 		return ComplexImageReturn{}, err
@@ -43,7 +43,7 @@ func getPassBookingVerifyComplexImage() (ComplexImageReturn, error) {
 
 // 验证
 func checkPassBookingComplexImage(id string, formInstanceId string, data cache.CaptchaData) (bool, error) {
-	_, err := client.Request("POST", "before/sys/captcha/checkPassBookingComplexImage", jwt.MapClaims{
+	_, err := client.RequestAuto("POST", "before/sys/captcha/checkPassBookingComplexImage", jwt.MapClaims{
 		"formInstanceId":   formInstanceId,
 		"appointmentType":  "passBooking",
 		"direction":        "S",

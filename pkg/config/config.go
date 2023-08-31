@@ -26,6 +26,8 @@ type UserOption struct {
 type AppointmentOption struct {
 	PlateNumber     string `json:"plateNumber,omitempty"`
 	AppointmentDate int64  `json:"appointmentDate,omitempty"`
+	StartTime       int64  `json:"startTime,omitempty"`
+	EndTime         int64  `json:"endTime,omitempty"`
 }
 
 type Option struct {

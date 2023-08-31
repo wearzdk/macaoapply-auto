@@ -1,18 +1,24 @@
 # Makefile
 SHELL := /bin/bash
-.PHONY: all build-web move-web build-go package clean
+.PHONY: all build-web move-web package clean build-go-linux build-go-darwin build-go-windows
 
-all: clean build-web move-web build-go package
+all: clean build-web move-web package build-go-linux build-go-darwin build-go-windows
 
 build-web:
-	cd web && npm run build
+	cd web && VITE_APP_BASE_URL=/webui/ && npm run build
 
 move-web:
 	mkdir -p out/webui
 	cp -r web/dist/* out/webui/
 
-build-go:
-	go build -o out/main main.go
+build-go-linux:
+	GOOS=linux GOARCH=amd64 go build -o out/apply-linux main.go
+
+build-go-darwin:
+	GOOS=darwin GOARCH=amd64 go build -o out/apply-darwin main.go
+
+build-go-windows:
+	GOOS=windows GOARCH=amd64 go build -o out/apply-win.exe main.go
 
 package:
 	cp msyh.ttf out/

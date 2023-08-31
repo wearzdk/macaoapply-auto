@@ -19,7 +19,7 @@ type AppointmentDate struct {
 }
 
 func GetAppointmentDateList() ([]AppointmentDate, error) {
-	resp, err := client.RequestWithRetry("POST", "before/sys/appointment/getAppointmentDate", jwt.MapClaims{
+	resp, err := client.RequestAuto("POST", "before/sys/appointment/getAppointmentDate", jwt.MapClaims{
 		"appointmentType": "passBooking",
 		"direction":       "S",
 	})
@@ -38,12 +38,13 @@ func GetAppointmentDateList() ([]AppointmentDate, error) {
 		appointmentDateList = append(appointmentDateList, appointmentDate)
 		return true
 	})
+	log.Println(appointmentDateList)
 	return appointmentDateList, nil
 }
 
 func CheckAppointmentListHasAvailable(list []AppointmentDate, date string) bool {
 	for _, appointmentDate := range list {
-		if appointmentDate.Quota > 0 && !appointmentDate.IsFull {
+		if !appointmentDate.IsFull {
 			// 判断是否是指定日期
 			if time.Unix(appointmentDate.AppointmentDate, 0).Format("2006-01-02") == date {
 				return true

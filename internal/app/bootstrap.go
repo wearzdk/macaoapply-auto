@@ -19,10 +19,58 @@ func Quit() {
 	quit <- true
 }
 
+func Running() bool {
+	return running
+}
+
 func Wait() {
 	log.Println("等待随机6-10秒...")
 	sec := rand.Intn(5) + 6
 	time.Sleep(time.Duration(sec) * time.Second)
+}
+
+func ShortWait() {
+	log.Println("等待随机1-3秒...")
+	sec := rand.Intn(2) + 1
+	time.Sleep(time.Duration(sec) * time.Second)
+}
+
+func CheckTime() bool {
+	startTime := time.Unix(config.Config.AppointmentOption.StartTime, 0)
+	// endTime := time.Unix(config.Config.AppointmentOption.EndTime, 0)
+
+	// 如果未到开始时间，等待
+	if time.Now().Before(startTime) {
+		log.Println("未到开始时间，等待...")
+		for {
+			// 退出检测
+			select {
+			case <-quit:
+				log.Println("退出")
+				return false
+			default:
+			}
+			startTime = time.Unix(config.Config.AppointmentOption.StartTime, 0)
+
+			if time.Now().After(startTime) {
+				break
+			}
+			// 距离开始时间 取整
+			log.Println("距离开始时间还有", int(startTime.Sub(time.Now()).Seconds()), "秒")
+			time.Sleep(1 * time.Second)
+		}
+	}
+	if config.Config.AppointmentOption.EndTime == 0 {
+		// log.Println("未配置结束时间")
+		return true
+	}
+	// 如果已过结束时间，退出
+	// if time.Now().After(endTime) {
+	// 	log.Println("已过结束时间，退出...")
+	// 	Quit()
+	// 	return false
+	// }
+	return true
 }
 
 // 配置检查
@@ -85,6 +133,11 @@ func BootStrap() {
 			return
 		default:
 		}
+		// // 检查时间
+		if !CheckTime() {
+			log.Println("退出...")
+			return
+		}
 		list, err := GetAppointmentDateList()
 		if err != nil {
 			log.Println("获取预约日期失败：" + err.Error())
@@ -94,7 +147,7 @@ func BootStrap() {
 		actDate := time.Unix(applyInfo.AppointmentDate, 0).Format("2006-01-02")
 		if !CheckAppointmentListHasAvailable(list, actDate) {
 			log.Println("无可用预约")
-			Wait()
+			ShortWait()
 			continue
 		}
 		log.Println("有可用预约，正在预约...")
