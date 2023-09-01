@@ -12,13 +12,13 @@ move-web:
 	cp -r web/dist/* out/webui/
 
 build-go-linux:
-	GOOS=linux GOARCH=amd64 go build -o out/apply-linux main.go
+	GOOS=linux GOARCH=amd64 go build -o out/apply-linux -ldflags "-s -w" main.go
 
 build-go-darwin:
-	GOOS=darwin GOARCH=amd64 go build -o out/apply-darwin main.go
+	GOOS=darwin GOARCH=amd64 go build -o out/apply-darwin -ldflags "-s -w" main.go
 
 build-go-windows:
-	GOOS=windows GOARCH=amd64 go build -o out/apply-win.exe main.go
+	GOOS=windows GOARCH=amd64 go build -o out/apply-win.exe -ldflags "-s -w" main.go
 
 package:
 	cp msyh.ttf out/

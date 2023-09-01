@@ -45,7 +45,6 @@ func init() {
 	client = resty.New()
 	requestCount = 0
 	client.SetTimeout(140 * time.Second)
-	client.SetHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36")
 	client.SetHeader("Accept", "application/json, text/javascript, */*; q=0.01")
 	client.SetHeader("Accept-Language", "zh-CN,zh;q=0.9")
 	client.SetHeader("Accept-Encoding", "gzip, deflate")
@@ -119,6 +118,8 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 	if data == nil {
 		data = jwt.MapClaims{}
 	}
+	log.Println("UA: ", config.Config.UA)
+	client.SetHeader("User-Agent", config.Config.UA)
 	// 加入iss
 	iss := config.Config.UserOption.Iss
 	if iss == "" {

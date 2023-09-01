@@ -34,6 +34,7 @@ type Option struct {
 	CJYOption         `json:"cjy,omitempty"`
 	UserOption        `json:"user,omitempty"`
 	AppointmentOption `json:"appointment,omitempty"`
+	UA                string `json:"ua,omitempty"`
 }
 
 var Config Option
