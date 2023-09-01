@@ -204,10 +204,11 @@ func RequestWithRetry(method string, url string, data jwt.MapClaims) (string, er
 			if !strings.Contains(errText, TimeOutErrText) {
 				return "", err
 			}
-			log.Println("请求超时... 2s后重试")
+			log.Println("请求超时... 2s后使用多线程")
 			// 重试 1s
 			time.Sleep(2 * time.Second)
-			continue
+			// 打开多线程
+			return RequestWithMulti(method, url, data)
 		}
 		return resp, nil
 	}
@@ -243,7 +244,7 @@ func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, er
 			dataCopy[k] = v
 		}
 		go func(data jwt.MapClaims) {
-			resp, err = RequestWithRetry(method, url, data)
+			resp, err = Request(method, url, data)
 			if err != nil {
 				log.Println("请求失败: ", err)
 			}
@@ -259,8 +260,23 @@ func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, er
 	return resp, err
 }
 
+// 是否为高峰时段
+func IsPeakTime() bool {
+	// 高峰时段 - 8:29-8:50
+	now := time.Now()
+	if now.Hour() == 8 && now.Minute() >= 29 && now.Minute() <= 50 {
+		return true
+	}
+	return false
+}
+
 // 自动选择
 func RequestAuto(method string, url string, data jwt.MapClaims) (string, error) {
+	// 高峰时段使用多线程
+	if IsPeakTime() {
+		log.Println("检测到高峰时段，使用多线程请求")
+		return RequestWithMulti(method, url, data)
+	}
 	if isSlowNetwork {
 		log.Println("检测到慢网络，使用多线程请求")
 		return RequestWithMulti(method, url, data)

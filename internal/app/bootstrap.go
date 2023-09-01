@@ -5,6 +5,7 @@ import (
 	"macaoapply-auto/internal/client"
 	"macaoapply-auto/pkg/config"
 	"math/rand"
+	"strings"
 	"time"
 )
 
@@ -60,16 +61,6 @@ func CheckTime() bool {
 			time.Sleep(1 * time.Second)
 		}
 	}
-	if config.Config.AppointmentOption.EndTime == 0 {
-		// log.Println("未配置结束时间")
-		return true
-	}
-	// 如果已过结束时间，退出
-	// if time.Now().After(endTime) {
-	// 	log.Println("已过结束时间，退出...")
-	// 	Quit()
-	// 	return false
-	// }
 	return true
 }
 
@@ -104,7 +95,18 @@ func BootStrap() {
 	}
 	applyInfo := config.Config.AppointmentOption
 	log.Println("启动...")
+	if !CheckTime() {
+		log.Println("退出...")
+		return
+	}
 	for {
+		// 退出检测
+		select {
+		case <-quit:
+			log.Println("退出")
+			return
+		default:
+		}
 		// 检查是否登录
 		if client.IsLogin() {
 			break
@@ -124,7 +126,6 @@ func BootStrap() {
 		return
 	}
 	log.Println("获取预约资格成功" + formInstance.FormInstanceID)
-
 	for {
 		// 退出检测
 		select {
@@ -153,14 +154,27 @@ func BootStrap() {
 		log.Println("有可用预约，正在预约...")
 		// 预约
 		for {
+			// 退出检测
+			select {
+			case <-quit:
+				log.Println("退出")
+				return
+			default:
+			}
 			err = DoAppointment(applyInfo)
 			if err != nil {
 				log.Println("预约失败：" + err.Error())
+				errText := err.Error()
+				if strings.Contains(errText, "預約名額已滿") {
+					log.Println("预约名额已满，回到预约前")
+					break
+				}
 				log.Println("等待30s...")
 				time.Sleep(30 * time.Second)
 				continue
 			}
 			log.Println("预约成功！预约进程即将退出...")
+			return
 		}
 	}
 }

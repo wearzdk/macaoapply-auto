@@ -5,6 +5,7 @@ import (
 	"log"
 	"macaoapply-auto/pkg/cjy"
 	"macaoapply-auto/pkg/config"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/tidwall/gjson"
@@ -37,7 +38,7 @@ func Login() {
 	log.Println("验证码：" + cjyResp.PicStr)
 
 	// 登录
-	resp, err := Request("POST", "before/login", jwt.MapClaims{
+	resp, err := RequestAuto("POST", "before/login", jwt.MapClaims{
 		"accountNo":             userConf.Username,
 		"password":              userConf.Password,
 		"verificationCode":      cjyResp.PicStr,
@@ -48,6 +49,12 @@ func Login() {
 		"accountType":           "personal",
 	})
 	if err != nil {
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "驗證碼錯誤") {
+			// 超级鹰报错
+			log.Println("验证码错误，汇报超级鹰")
+			cjy.ReportError(cjyResp.PicId)
+		}
 		log.Println("登录失败：" + err.Error())
 		return
 	}

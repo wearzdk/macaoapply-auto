@@ -128,7 +128,7 @@ func main() {
 		// linux
 		exec.Command("xdg-open", "http://localhost:12369/webui").Start()
 	}()
-	go app.BootStrap()
+	// go app.BootStrap()
 
 	err := server.Run(":12369")
 	if err != nil {

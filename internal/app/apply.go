@@ -38,7 +38,8 @@ func GetAppointmentDateList() ([]AppointmentDate, error) {
 		appointmentDateList = append(appointmentDateList, appointmentDate)
 		return true
 	})
-	log.Println(appointmentDateList)
+	log.Println("获取预约日期成功")
+	// log.Println(appointmentDateList)
 	return appointmentDateList, nil
 }
 
