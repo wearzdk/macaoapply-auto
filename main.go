@@ -6,10 +6,9 @@ import (
 	"macaoapply-auto/internal/app"
 	"macaoapply-auto/internal/model"
 	"macaoapply-auto/internal/router"
+	"macaoapply-auto/pkg/config"
 	"net/http"
-	"os/exec"
 	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -122,15 +121,16 @@ func main() {
 	// webui
 	server.Static("/webui", "./webui")
 	// 打开浏览器
-	go func() {
-		time.Sleep(time.Second)
-		exec.Command("cmd", "/c", "start", "http://localhost:12369/webui").Start()
-		// linux
-		exec.Command("xdg-open", "http://localhost:12369/webui").Start()
-	}()
+	// go func() {
+	// 	time.Sleep(time.Second)
+	// 	exec.Command("cmd", "/c", "start", "http://localhost:12369/webui").Start()
+	// 	// linux
+	// 	exec.Command("xdg-open", "http://localhost:12369/webui").Start()
+	// }()
 	// go app.BootStrap()
-
-	err := server.Run(":12369")
+	port := config.Config.Port
+	log.Println("macaoapply-auto start success, listen on " + port)
+	err := server.Run(":" + port)
 	if err != nil {
 		return
 	}

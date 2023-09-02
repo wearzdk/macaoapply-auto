@@ -12,6 +12,7 @@ import (
 	"macaoapply-auto/pkg/config"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -118,7 +119,7 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 	if data == nil {
 		data = jwt.MapClaims{}
 	}
-	log.Println("UA: ", config.Config.UA)
+	// log.Println("UA: ", config.Config.UA)
 	client.SetHeader("User-Agent", config.Config.UA)
 	// 加入iss
 	iss := config.Config.UserOption.Iss
@@ -234,27 +235,38 @@ func RequestWithCache(method string, url string, data jwt.MapClaims) (string, er
 
 // 针对慢网络-多线程请求
 func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, error) {
+	type result struct {
+		resp string
+		err  error
+	}
+
 	const threadCount = 8
-	var resp string
-	var err error
-	var ch = make(chan string, threadCount)
+	var once sync.Once
+	ch := make(chan result, threadCount)
 	for i := 0; i < threadCount; i++ {
-		// map不是线程安全的，所以这里需要复制一份
 		dataCopy := make(jwt.MapClaims)
 		for k, v := range data {
 			dataCopy[k] = v
 		}
 		go func(data jwt.MapClaims) {
-			resp, err = Request(method, url, data)
+			resp, err := Request(method, url, data)
 			if err != nil {
 				log.Println("请求失败: ", err)
 			}
-			ch <- resp
+
+			once.Do(func() {
+				ch <- result{resp, err}
+			})
 		}(dataCopy)
 	}
-	for i := 0; i < threadCount; i++ {
-		resp = <-ch
-		if resp != "" {
+	defer close(ch)
+
+	var resp string
+	var err error
+	for r := range ch {
+		if r.resp != "" {
+			resp = r.resp
+			err = r.err
 			break
 		}
 	}

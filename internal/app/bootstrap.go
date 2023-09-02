@@ -4,7 +4,6 @@ import (
 	"log"
 	"macaoapply-auto/internal/client"
 	"macaoapply-auto/pkg/config"
-	"math/rand"
 	"strings"
 	"time"
 )
@@ -24,16 +23,9 @@ func Running() bool {
 	return running
 }
 
-func Wait() {
-	log.Println("等待随机6-10秒...")
-	sec := rand.Intn(5) + 6
-	time.Sleep(time.Duration(sec) * time.Second)
-}
-
 func ShortWait() {
-	log.Println("等待随机1-3秒...")
-	sec := rand.Intn(2) + 1
-	time.Sleep(time.Duration(sec) * time.Second)
+	log.Printf("等待%d毫秒...\n", config.Config.Speed)
+	time.Sleep(time.Duration(config.Config.Speed) * time.Millisecond)
 }
 
 func CheckTime() bool {
@@ -117,7 +109,7 @@ func BootStrap() {
 			break
 		}
 		log.Println("登录失败")
-		Wait()
+		ShortWait()
 	}
 	log.Println("当前已登录")
 	formInstance, err := getPassQualification(applyInfo.PlateNumber)
@@ -142,7 +134,7 @@ func BootStrap() {
 		list, err := GetAppointmentDateList()
 		if err != nil {
 			log.Println("获取预约日期失败：" + err.Error())
-			Wait()
+			ShortWait()
 			continue
 		}
 		actDate := time.Unix(applyInfo.AppointmentDate, 0).Format("2006-01-02")
