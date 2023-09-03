@@ -8,7 +8,9 @@ import (
 	"macaoapply-auto/internal/router"
 	"macaoapply-auto/pkg/config"
 	"net/http"
+	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -24,7 +26,7 @@ func SetupWs() {
 
 type WriterProxy struct{}
 
-var msgChan = make(chan string)
+var msgChan = make(chan string, 100) // 100条消息缓冲
 
 func (w *WriterProxy) Write(p []byte) (n int, err error) {
 	fmt.Print(string(p))
@@ -62,8 +64,9 @@ func (cm *ClientManager) WriteMessage(message string) {
 	for ws := range cm.clients {
 		if err := ws.WriteMessage(websocket.TextMessage, []byte(message)); err != nil {
 			log.Println("write:", err)
-			ws.Close()
+			cm.lock.Lock()
 			delete(cm.clients, ws)
+			cm.lock.Unlock()
 		}
 	}
 }
@@ -73,7 +76,8 @@ var clientManager *ClientManager
 func serveWS(c *gin.Context) {
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("upgrade:", err)
+		return
 	}
 	defer ws.Close()
 	clientManager.Add(ws)
@@ -120,13 +124,14 @@ func main() {
 	server.GET("/ws", serveWS)
 	// webui
 	server.Static("/webui", "./webui")
+	webuiUrl := "http://localhost:" + config.Config.Port + "/webui"
 	// 打开浏览器
-	// go func() {
-	// 	time.Sleep(time.Second)
-	// 	exec.Command("cmd", "/c", "start", "http://localhost:12369/webui").Start()
-	// 	// linux
-	// 	exec.Command("xdg-open", "http://localhost:12369/webui").Start()
-	// }()
+	go func() {
+		time.Sleep(time.Second)
+		exec.Command("cmd", "/c", "start", webuiUrl).Start()
+		// linux
+		exec.Command("xdg-open", webuiUrl).Start()
+	}()
 	// go app.BootStrap()
 	port := config.Config.Port
 	log.Println("macaoapply-auto start success, listen on " + port)

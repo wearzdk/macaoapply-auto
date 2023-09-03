@@ -32,6 +32,7 @@ func Login() {
 	// 识别验证码
 	cjyResp := cjy.GetPicVal(imgData)
 	if cjyResp == nil {
+		log.Println("验证码识别失败")
 		return
 	}
 	log.Println("验证码识别成功")

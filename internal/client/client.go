@@ -53,7 +53,7 @@ func init() {
 	client.SetHeader("Origin", "https://macaoapply.singlewindow.gd.cn")
 	client.SetHeader("Referer", "https://macaoapply.singlewindow.gd.cn/")
 	client.SetBaseURL("https://macaoapply.singlewindow.gd.cn")
-	// client.SetDebug(true)
+	//client.SetDebug(true)
 	LoadCookie()
 }
 
@@ -163,7 +163,8 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 		// 错误处理
 		// 80x 重新登录
 		if code == 801 || code == 802 || code == 803 {
-			log.Println("登录过期，重新登录")
+			log.Println("登录过期，1s后重新登录")
+			time.Sleep(time.Second)
 			// 重新登录
 			Login()
 			// 重新请求
