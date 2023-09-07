@@ -155,13 +155,15 @@ type Track struct {
 	T    int64
 }
 
-func GenerateTrack(target int) []Track {
-	var trackList []Track
-	currentOffset := 0
-	// 2000 + rand.Intn(1000)
+func GenerateTrack(distance int) []Track {
+	track := []Track{}
+	current := 0
+	mid := distance * 4 / 5
+	t := 0.2
+	v := 0.0
 	startTime := int64(2000 + rand.Intn(2000))
 
-	trackList = append(trackList, Track{
+	track = append(track, Track{
 		X:    0,
 		Y:    0,
 		Type: "down",
@@ -169,29 +171,38 @@ func GenerateTrack(target int) []Track {
 	})
 
 	for {
-		// log.Println("currentOffset: " + strconv.Itoa(currentOffset) + " target: " + strconv.Itoa(target) + " startTime: " + strconv.FormatInt(startTime, 10) + " speed: " + strconv.FormatFloat(rand.Float64()*2+2, 'f', 2, 64))
-		speed := rand.Float64()*2 + 2
-		move := rand.Intn(2)
-		currentOffset += move
+		a := 0.0
+		if current < mid {
+			a = 2.0
+		} else {
+			a = -3.0
+		}
+		speed := rand.Float64()*5 + 10
 		startTime += int64(speed)
 
-		trackList = append(trackList, Track{
-			X:    currentOffset,
+		v0 := v
+		v = v0 + a*t
+		move := v0*t + 0.5*a*t*t
+		current += int(move)
+
+		track = append(track, Track{
+			X:    current + rand.Intn(2),
 			Y:    rand.Intn(2),
 			Type: "move",
 			T:    startTime,
 		})
-		if currentOffset >= target {
+
+		if current >= distance {
 			break
 		}
 	}
 
-	trackList = append(trackList, Track{
-		X:    currentOffset,
-		Y:    0,
+	track = append(track, Track{
+		X:    distance,
+		Y:    rand.Intn(2),
 		Type: "up",
 		T:    startTime + 2,
 	})
 
-	return trackList
+	return track
 }

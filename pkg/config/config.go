@@ -37,6 +37,8 @@ type Option struct {
 	UA                string `json:"ua,omitempty"`
 	Port              string `json:"port,omitempty"`
 	Speed             int64  `json:"speed,omitempty"`
+	Thread            int    `json:"thread,omitempty"`
+	OnMulti           bool   `json:"onMulti,omitempty"`
 }
 
 var Config Option
@@ -44,9 +46,10 @@ var Config Option
 func init() {
 	// 初始化
 	Config = Option{
-		Port:  "8080",
-		UA:    "Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
-		Speed: 800,
+		Port:   "8080",
+		UA:     "Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
+		Speed:  800,
+		Thread: 2,
 	}
 	// 在配置中读取
 	file := FileReading("config.json")

@@ -241,7 +241,7 @@ func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, er
 		err  error
 	}
 
-	const threadCount = 8
+	threadCount := config.Config.Thread
 	var once sync.Once
 	ch := make(chan result, threadCount)
 	for i := 0; i < threadCount; i++ {
@@ -249,6 +249,8 @@ func RequestWithMulti(method string, url string, data jwt.MapClaims) (string, er
 		for k, v := range data {
 			dataCopy[k] = v
 		}
+		// 每个请求间隔 200ms
+		time.Sleep(200 * time.Millisecond)
 		go func(data jwt.MapClaims) {
 			resp, err := Request(method, url, data)
 			if err != nil {
