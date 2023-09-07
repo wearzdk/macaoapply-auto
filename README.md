@@ -8,9 +8,11 @@
 cd web
 npm ci # 安装npm依赖
 ```
+
 之后在项目根目录下 运行
+
 ```bash
 make all
 ```
 
-将在out目录输出win、mac、linux可执行文件
+将在 out 目录输出 win、mac、linux 可执行文件

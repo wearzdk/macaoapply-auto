@@ -118,16 +118,6 @@ func BootStrap() {
 		return
 	}
 	log.Println("获取预约资格成功" + formInstance.FormInstanceID)
-	err = DoAppointment(applyInfo)
-	if err != nil {
-		log.Println("预约失败：" + err.Error())
-		errText := err.Error()
-		if strings.Contains(errText, "預約名額已滿") {
-			log.Println("预约名额已满，回到预约前")
-		}
-		log.Println("等待30s...")
-		time.Sleep(30 * time.Second)
-	}
 	for {
 		// 退出检测
 		select {
