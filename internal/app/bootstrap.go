@@ -112,12 +112,27 @@ func BootStrap() {
 		ShortWait()
 	}
 	log.Println("当前已登录")
-	formInstance, err := getPassQualification(applyInfo.PlateNumber)
-	if err != nil {
-		log.Println("获取预约资格失败：" + err.Error())
-		return
+	// 预约资格
+	var formInstance FormInstance
+	for {
+		// 退出检测
+		select {
+		case <-quit:
+			log.Println("退出")
+			return
+		default:
+		}
+		log.Println("正在获取预约资格...")
+		var err error
+		formInstance, err = getPassQualification(applyInfo.PlateNumber)
+		if err != nil {
+			log.Println("获取预约资格失败：" + err.Error())
+			ShortWait()
+			continue
+		}
+		log.Println("获取预约资格成功" + formInstance.FormInstanceID)
+		break
 	}
-	log.Println("获取预约资格成功" + formInstance.FormInstanceID)
 	for {
 		// 退出检测
 		select {
@@ -153,7 +168,7 @@ func BootStrap() {
 				return
 			default:
 			}
-			err = DoAppointment(applyInfo)
+			err = DoAppointment(applyInfo, formInstance)
 			if err != nil {
 				log.Println("预约失败：" + err.Error())
 				errText := err.Error()

@@ -207,11 +207,10 @@ func RequestWithRetry(method string, url string, data jwt.MapClaims) (string, er
 			if !strings.Contains(errText, TimeOutErrText) {
 				return "", err
 			}
-			log.Println("请求超时... 2s后使用多线程")
+			log.Println("请求超时... 2s后重试")
 			// 重试 1s
 			time.Sleep(2 * time.Second)
-			// 打开多线程
-			return RequestWithMulti(method, url, data)
+			continue
 		}
 		return resp, nil
 	}
@@ -288,16 +287,19 @@ func IsPeakTime() bool {
 
 // 自动选择
 func RequestAuto(method string, url string, data jwt.MapClaims) (string, error) {
-	// 高峰时段使用多线程
-	if IsPeakTime() {
-		log.Println("检测到高峰时段，使用多线程请求")
-		return RequestWithMulti(method, url, data)
-	}
-	if isSlowNetwork {
-		log.Println("检测到慢网络，使用多线程请求")
-		return RequestWithMulti(method, url, data)
-	}
+	// 禁用多线程
 	return RequestWithRetry(method, url, data)
+
+	// // 高峰时段使用多线程
+	// if IsPeakTime() {
+	// 	log.Println("检测到高峰时段，使用多线程请求")
+	// 	return RequestWithMulti(method, url, data)
+	// }
+	// if isSlowNetwork {
+	// 	log.Println("检测到慢网络，使用多线程请求")
+	// 	return RequestWithMulti(method, url, data)
+	// }
+	// return RequestWithRetry(method, url, data)
 }
 
 func GetToken() *http.Cookie {

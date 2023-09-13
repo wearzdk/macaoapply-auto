@@ -131,6 +131,8 @@ func main() {
 		exec.Command("cmd", "/c", "start", webuiUrl).Start()
 		// linux
 		exec.Command("xdg-open", webuiUrl).Start()
+		// mac
+		exec.Command("open", webuiUrl).Start()
 	}()
 	// go app.BootStrap()
 	port := config.Config.Port
