@@ -6,7 +6,7 @@
 
 ```bash
 cd web
-npm ci # 安装npm依赖
+npm i # 安装npm依赖
 ```
 
 之后在项目根目录下 运行
