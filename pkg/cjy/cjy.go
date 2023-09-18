@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"macaoapply-auto/pkg/config"
+	"time"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -36,6 +37,8 @@ func GetPicPos(data []byte) *CJYResp {
 }
 
 func GetPicRes(data []byte, codeType string) *CJYResp {
+	// 开始时间
+	startTime := time.Now()
 	url := "https://upload.chaojiying.net/Upload/Processing.php"
 	var dataBase64 string
 	dataBase64 = base64.StdEncoding.EncodeToString(data)
@@ -62,6 +65,7 @@ func GetPicRes(data []byte, codeType string) *CJYResp {
 		log.Println("超级鹰返回错误" + cjyResp.ErrStr)
 		return nil
 	}
+	log.Println("超级鹰请求耗时", time.Now().Sub(startTime))
 	return &cjyResp
 }
 

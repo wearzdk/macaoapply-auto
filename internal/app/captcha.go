@@ -2,11 +2,15 @@ package app
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"log"
 	"macaoapply-auto/internal/cache"
 	"macaoapply-auto/internal/client"
 	"macaoapply-auto/pkg/cjy"
+	"macaoapply-auto/pkg/config"
 	"macaoapply-auto/pkg/imageText"
+	"macaoapply-auto/pkg/yunma"
 	"math/rand"
 	"os"
 	"strconv"
@@ -19,6 +23,7 @@ import (
 
 type ComplexImageReturn struct {
 	imageData   string
+	slideImage  string
 	id          string
 	originWidth int
 }
@@ -31,11 +36,13 @@ func getPassBookingVerifyComplexImage() (ComplexImageReturn, error) {
 	}
 	// log.Println(resp)
 	imgUrl := gjson.Get(resp, "responseList.captcha.backgroundImage").String()
+	slideImage := gjson.Get(resp, "responseList.captcha.templateImage").String()
 	id := gjson.Get(resp, "responseList.id").String()
 	originWidth := gjson.Get(resp, "responseList.captcha.backgroundImageWidth").Int()
 	// 去除data:image/jpeg;base64,
 	return ComplexImageReturn{
 		imageData:   imgUrl[strings.Index(imgUrl, ",")+1:],
+		slideImage:  slideImage[strings.Index(slideImage, ",")+1:],
 		id:          id,
 		originWidth: int(originWidth),
 	}, nil
@@ -58,24 +65,19 @@ func checkPassBookingComplexImage(id string, formInstanceId string, data cache.C
 	return true, nil
 }
 
-// 处理验证码
-func doCaptcha(formInstanceId string) (cache.CaptchaData, error) {
-	// 获取滑动验证码
-	resp, err := getPassBookingVerifyComplexImage()
-	if err != nil {
-		log.Println("获取滑动验证码失败：" + err.Error())
-		return nil, err
-	}
-	imageBytes, err := base64.StdEncoding.DecodeString(resp.imageData)
+type ProcessCaptchaFunc func(resp *ComplexImageReturn) (x float64, err error)
+
+func processCaptchaCjy(data *ComplexImageReturn) (x float64, err error) {
+	imageBytes, err := base64.StdEncoding.DecodeString(data.imageData)
 	if err != nil {
 		log.Println("base64解码失败：" + err.Error())
-		return nil, err
+		return 0, err
 	}
 	// 插入文字
 	newImage, err := imageText.InsertTextToImage(imageBytes, "请点击凹槽正中间")
 	if err != nil {
 		log.Println("插入文字失败：" + err.Error())
-		return nil, err
+		return 0, err
 	}
 	// 保存图片
 	os.WriteFile("captcha.jpg", newImage, 0666)
@@ -84,26 +86,73 @@ func doCaptcha(formInstanceId string) (cache.CaptchaData, error) {
 	// 识别验证码
 	cjyResp := cjy.GetPicPos(newImage)
 	if cjyResp == nil {
-		return nil, err
+		return 0, err
 	}
 	log.Println("验证码识别成功")
 	log.Println("中间位置" + cjyResp.PicStr) // x,y
-	x, err := strconv.Atoi(strings.Split(cjyResp.PicStr, ",")[0])
+	x_str, err := strconv.Atoi(strings.Split(cjyResp.PicStr, ",")[0])
+	if err != nil {
+		log.Println("验证码识别失败：" + err.Error())
+		return 0, err
+	}
+	x = float64(x_str)
+	originWidth := data.originWidth
+	// 相对位置
+	x = x * 260 / float64(originWidth)
+	// 相对左上角
+	x = x - 24.25
+	log.Println("相对位置" + strconv.FormatFloat(x, 'f', 2, 64))
+	return x, nil
+}
+
+func processCaptchaYm(data *ComplexImageReturn) (x float64, err error) {
+	ymConf := config.Config.YunMaOption
+	if ymConf.Token == "" {
+		log.Println("请配置云码token")
+		return 0, fmt.Errorf("请配置云码token")
+	}
+	// 识别验证码
+	yunmaResp, err := yunma.SlideVerify(data.slideImage, data.imageData, ymConf.Token)
+	if err != nil {
+		log.Println("云码识别失败：" + err.Error())
+		return 0, err
+	}
+	x_str := gjson.Get(yunmaResp, "data").String()
+	x_int, err := strconv.Atoi(x_str)
+	if err != nil {
+		log.Println("云码识别失败：数据格式不正确" + err.Error())
+		return 0, err
+	}
+	x = float64(x_int)
+	originWidth := data.originWidth
+	// 相对位置
+	x = x * 260 / float64(originWidth)
+	// // 相对左上角
+	// x = x - 24.25
+	log.Println("相对位置" + strconv.FormatFloat(x, 'f', 2, 64))
+	return x, nil
+}
+
+func doCaptcha(formInstanceId string, processCaptcha ProcessCaptchaFunc) (cache.CaptchaData, error) {
+	// 获取滑动验证码
+	resp, err := getPassBookingVerifyComplexImage()
+	if err != nil {
+		log.Println("获取滑动验证码失败：" + err.Error())
+		return nil, err
+	}
+	startSlidingTime := time.Now()
+	// 识别验证码
+	x, err := processCaptcha(&resp)
 	if err != nil {
 		log.Println("验证码识别失败：" + err.Error())
 		return nil, err
 	}
-	originWidth := resp.originWidth
-	// 相对位置
-	x = x * 260 / originWidth
-	// 相对左上角
-	x = x - 25
-	log.Println("相对位置" + strconv.Itoa(x))
+	log.Println("相对位置" + strconv.FormatFloat(x, 'f', 2, 64))
 	// 模拟滑动
-	trackList := GenerateTrack(x)
-	startSlidingTime := time.Now().Add(time.Duration(-6) * time.Second)
+	trackList := GenerateTrack(int(x))
 	lastTrack := trackList[len(trackList)-1]
 	firstTrack := trackList[0]
+	startSlidingTime = startSlidingTime.Add(time.Duration(firstTrack.T) * time.Millisecond)
 	endSlidingTime := startSlidingTime.Add(time.Duration(lastTrack.T-firstTrack.T) * time.Millisecond)
 	verifyUploadData := cache.CaptchaData{
 		"bgImageWidth":     260,
@@ -112,7 +161,16 @@ func doCaptcha(formInstanceId string) (cache.CaptchaData, error) {
 		"entSlidingTime":   endSlidingTime.Format("2006-01-02T15:04:05.000Z"),
 		"trackList":        trackList,
 	}
-	// log.Printf("verifyUploadData: %v\n", verifyUploadData)
+	verifyUploadDataJson, _ := json.Marshal(verifyUploadData)
+	log.Println("verifyUploadDataJson: ", string(verifyUploadDataJson))
+	// 检查是否到endSlidingTime
+	// for {
+	// 	if time.Now().After(endSlidingTime) {
+	// 		break
+	// 	}
+	// 	log.Println("等待滑动验证码结束")
+	// 	time.Sleep(endSlidingTime.Sub(time.Now()))
+	// }
 	// 验证
 	ok, err := checkPassBookingComplexImage(resp.id, formInstanceId, verifyUploadData)
 	if err != nil {
@@ -137,7 +195,16 @@ func handelCaptcha(formInstanceId string) cache.CaptchaData {
 		return cache.CaptchaCache
 	}
 	for {
-		data, err := doCaptcha(formInstanceId)
+		var data cache.CaptchaData
+		var err error
+		if config.Config.CaptchaEngine == config.CaptchaEngineCJY {
+			data, err = doCaptcha(formInstanceId, processCaptchaCjy)
+		} else if config.Config.CaptchaEngine == config.CaptchaEngineYunMa {
+			data, err = doCaptcha(formInstanceId, processCaptchaYm)
+		} else {
+			log.Println("未知验证码引擎")
+			return nil
+		}
 		if err != nil {
 			log.Println("处理验证码失败：1s后重试" + err.Error())
 			time.Sleep(1 * time.Second)

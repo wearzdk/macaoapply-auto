@@ -133,6 +133,9 @@ func BootStrap() {
 		log.Println("获取预约资格成功" + formInstance.FormInstanceID)
 		break
 	}
+	// // 测试 验证码
+	// handelCaptcha(formInstance.FormInstanceID)
+	// time.Sleep(10 * time.Second)
 	for {
 		// 退出检测
 		select {

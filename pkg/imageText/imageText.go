@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/jpeg"
-	"image/png"
 	"os"
 
 	"github.com/golang/freetype/truetype"
@@ -54,7 +53,9 @@ func InsertTextToImage(imageBytes []byte, text string) ([]byte, error) {
 	d.DrawString(text)
 
 	buf := new(bytes.Buffer)
-	err = png.Encode(buf, img)
+	err = jpeg.Encode(buf, img, &jpeg.Options{
+		Quality: 70,
+	})
 	if err != nil {
 		return nil, err
 	}

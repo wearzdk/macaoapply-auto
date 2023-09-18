@@ -15,6 +15,17 @@ type CJYOption struct {
 	SoftId   string `json:"softId,omitempty"`
 }
 
+type YunMaOption struct {
+	Token string `json:"token,omitempty"`
+}
+
+type CaptchaEngine string
+
+const (
+	CaptchaEngineCJY   CaptchaEngine = "cjy"
+	CaptchaEngineYunMa CaptchaEngine = "yunma"
+)
+
 type UserOption struct {
 	Username string        `json:"username,omitempty"`
 	Password string        `json:"password,omitempty"`
@@ -34,6 +45,8 @@ type Option struct {
 	CJYOption         `json:"cjy,omitempty"`
 	UserOption        `json:"user,omitempty"`
 	AppointmentOption `json:"appointment,omitempty"`
+	YunMaOption       `json:"yunma,omitempty"`
+	CaptchaEngine     `json:"captchaEngine,omitempty"`
 	UA                string `json:"ua,omitempty"`
 	Port              string `json:"port,omitempty"`
 	Speed             int64  `json:"speed,omitempty"`
@@ -46,10 +59,11 @@ var Config Option
 func init() {
 	// 初始化
 	Config = Option{
-		Port:   "8080",
-		UA:     "Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
-		Speed:  800,
-		Thread: 2,
+		Port:          "8080",
+		UA:            "Mozilla/5.0 (Linux; Android 10; Redmi K30 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
+		Speed:         800,
+		Thread:        2,
+		CaptchaEngine: CaptchaEngineYunMa,
 	}
 	// 在配置中读取
 	file := FileReading("config.json")

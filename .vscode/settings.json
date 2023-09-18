@@ -1,7 +1,7 @@
 {
   "go.lintTool": "golangci-lint",
   "go.lintFlags": ["--fast"],
-  "cSpell.words": ["macaoapply", "resty", "truetype"],
+  "cSpell.words": ["macaoapply", "resty", "truetype", "yunma"],
   "vite.autoStart": false,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
