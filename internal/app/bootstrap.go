@@ -1,26 +1,41 @@
 package app
 
 import (
+	"context"
 	"log"
 	"macaoapply-auto/internal/client"
 	"macaoapply-auto/pkg/config"
-	"strings"
 	"time"
 )
 
-var quit = make(chan bool)
-var running = false
+var instance context.Context
+var cancelFunc context.CancelFunc
 
-func Quit() {
-	if !running {
-		log.Println("未启动, 无需退出")
+func Start() {
+	if Running() {
+		log.Println("已经在运行中")
 		return
 	}
-	quit <- true
+	instance, cancelFunc = context.WithCancel(context.Background())
+	go BootStrap(instance)
 }
 
 func Running() bool {
-	return running
+	return instance != nil
+}
+
+func Quit() {
+	if cancelFunc != nil {
+		cancelFunc()
+		cancelFunc = nil
+		instance = nil
+		log.Println("已退出")
+	}
+}
+
+func Restart() {
+	Quit()
+	Start()
 }
 
 func ShortWait() {
@@ -36,13 +51,6 @@ func CheckTime() bool {
 	if time.Now().Before(startTime) {
 		log.Println("未到开始时间，等待...")
 		for {
-			// 退出检测
-			select {
-			case <-quit:
-				log.Println("退出")
-				return false
-			default:
-			}
 			startTime = time.Unix(config.Config.AppointmentOption.StartTime, 0)
 
 			if time.Now().After(startTime) {
@@ -76,115 +84,47 @@ func CheckConfig() bool {
 	return true
 }
 
-func BootStrap() {
-	running = true
-	defer func() {
-		running = false
-	}()
+func BootStrap(ctx context.Context) {
 	// 配置检查
 	if !CheckConfig() {
 		return
 	}
-	applyInfo := config.Config.AppointmentOption
 	log.Println("启动...")
 	if !CheckTime() {
 		log.Println("退出...")
 		return
 	}
+	// 清空任务
+	ClearTask()
+	// 检查是否登录
+	AddTask(loginTask, "login")
+	// 获取预约资格
+	AddTask(getPassQualificationTask, "getPassQualification")
+	// 获取预约日期
+	AddTask(getAppointmentDateListTask, "getAppointmentDateList")
+	// 预约
+	AddTask(doAppointmentTask, "doAppointment")
+	// 执行任务
+	CheckoutTask("login")
+
+	// 配置登出回调
+	client.OnLogout = onLogOut
+
 	for {
-		// 退出检测
-		select {
-		case <-quit:
-			log.Println("退出")
-			return
-		default:
-		}
-		// 检查是否登录
-		if client.IsLogin() {
-			break
-		}
-		log.Println("未登录，正在登录...")
-		client.Login()
-		if client.IsLogin() {
-			break
-		}
-		log.Println("登录失败")
-		ShortWait()
-	}
-	log.Println("当前已登录")
-	// 预约资格
-	var formInstance FormInstance
-	for {
-		// 退出检测
-		select {
-		case <-quit:
-			log.Println("退出")
-			return
-		default:
-		}
-		log.Println("正在获取预约资格...")
-		var err error
-		formInstance, err = getPassQualification(applyInfo.PlateNumber)
-		if err != nil {
-			log.Println("获取预约资格失败：" + err.Error())
-			ShortWait()
-			continue
-		}
-		log.Println("获取预约资格成功" + formInstance.FormInstanceID)
-		break
-	}
-	// // 测试 验证码
-	// handelCaptcha(formInstance.FormInstanceID)
-	// time.Sleep(10 * time.Second)
-	for {
-		// 退出检测
-		select {
-		case <-quit:
-			log.Println("退出")
-			return
-		default:
-		}
-		// // 检查时间
-		if !CheckTime() {
-			log.Println("退出...")
+		if currentTask == nil {
+			log.Println("任务执行完毕 预约进程退出...")
 			return
 		}
-		list, err := GetAppointmentDateList()
-		if err != nil {
-			log.Println("获取预约日期失败：" + err.Error())
-			ShortWait()
-			continue
-		}
-		actDate := time.Unix(applyInfo.AppointmentDate, 0).Format("2006-01-02")
-		if !CheckAppointmentListHasAvailable(list, actDate) {
-			log.Println("无可用预约")
-			ShortWait()
-			continue
-		}
-		log.Println("有可用预约，正在预约...")
-		// 预约
 		for {
-			// 退出检测
 			select {
-			case <-quit:
-				log.Println("退出")
-				return
+			case <-ctx.Done():
+				return // 如果context已经被取消，则返回
 			default:
-			}
-			err = DoAppointment(applyInfo, formInstance)
-			if err != nil {
-				log.Println("预约失败：" + err.Error())
-				errText := err.Error()
-				if strings.Contains(errText, "預約名額已滿") {
-					log.Println("预约名额已满，回到预约前")
-					break
+				ok := currentTask.fn(ctx)
+				if ok {
+					NextTask()
 				}
-				log.Println("等待30s...")
-				time.Sleep(30 * time.Second)
-				continue
 			}
-			log.Println("预约成功！预约进程即将退出...")
-			return
 		}
 	}
 }

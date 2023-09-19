@@ -55,17 +55,17 @@ func CheckAppointmentListHasAvailable(list []AppointmentDate, date string) bool 
 	return false
 }
 
-func DoAppointment(data config.AppointmentOption, formInstance FormInstance) error {
+func DoAppointment(data config.AppointmentOption, formInstance *FormInstance) error {
 	var err error
 	// 2. 处理验证码
 	captchaData := handelCaptcha(formInstance.FormInstanceID)
 	// 3. validationPassBooking
-	err = validationPassBooking(&formInstance, captchaData, &data)
+	err = validationPassBooking(formInstance, captchaData, &data)
 	if err != nil {
 		return err
 	}
 	// 4. doAppointment
-	err = createPassAppointment(&formInstance, captchaData, &data)
+	err = createPassAppointment(formInstance, captchaData, &data)
 	if err != nil {
 		return err
 	}

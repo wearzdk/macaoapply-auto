@@ -1,8 +1,9 @@
-package client
+package app
 
 import (
 	"encoding/base64"
 	"log"
+	"macaoapply-auto/internal/client"
 	"macaoapply-auto/pkg/cjy"
 	"macaoapply-auto/pkg/config"
 	"macaoapply-auto/pkg/yunma"
@@ -75,7 +76,7 @@ func Login() {
 	log.Println("验证码：" + code)
 
 	// 登录
-	resp, err := RequestAuto("POST", "before/login", jwt.MapClaims{
+	resp, err := client.RequestAuto("POST", "before/login", jwt.MapClaims{
 		"accountNo":             userConf.Username,
 		"password":              userConf.Password,
 		"verificationCode":      code,
@@ -96,10 +97,10 @@ func Login() {
 		return
 	}
 	token := gjson.Get(resp, "token").String()
-	SetToken(token)
+	client.SetToken(token)
 	log.Println("登录成功", token)
 
-	SaveCookie() // 保存cookie
+	client.SaveCookie() // 保存cookie
 }
 
 type getLoginVerifyCodeResp struct {
@@ -108,7 +109,7 @@ type getLoginVerifyCodeResp struct {
 }
 
 func getLoginVerifyCode() (getLoginVerifyCodeResp, error) {
-	resp, err := Request("GET", "before/sys/verifyCode/getLoginVerifyCode", nil)
+	resp, err := client.Request("GET", "before/sys/verifyCode/getLoginVerifyCode", nil)
 	if err != nil {
 		log.Println("获取登录验证码失败：" + err.Error())
 

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"macaoapply-auto/internal/app"
 	"macaoapply-auto/internal/model"
 	"macaoapply-auto/internal/router"
 	"macaoapply-auto/pkg/config"
@@ -102,11 +101,6 @@ func wsWriter() {
 		msg := <-msgChan
 		clientManager.WriteMessage(msg)
 	}
-}
-
-func reboot() {
-	log.Println("reboot")
-	app.BootStrap()
 }
 
 func main() {
