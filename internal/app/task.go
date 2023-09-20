@@ -61,6 +61,17 @@ func ClearTask() {
 	currentTask = nil
 }
 
+func CheckTimeTask(ctx context.Context) bool {
+	startTime := time.Unix(config.Config.AppointmentOption.StartTime, 0)
+	if time.Now().After(startTime) {
+		return true
+	}
+	// 距离开始时间 取整
+	log.Println("距离开始时间还有", int(startTime.Sub(time.Now()).Seconds()), "秒")
+	time.Sleep(1 * time.Second)
+	return false
+}
+
 func loginTask(ctx context.Context) bool {
 	// 检查是否登录
 	if client.IsLogin() {
@@ -138,5 +149,18 @@ func doAppointmentTask(ctx context.Context) bool {
 		return false
 	}
 	log.Println("预约成功！预约进程即将退出...")
+	return true
+}
+
+// 测试验证码识别
+func testCaptchaTask(ctx context.Context) bool {
+	formInstance := formInstanceGlobe
+	if formInstance == nil {
+		log.Println("未找到formInstance 回到预约前")
+		CheckoutTask("getPassQualification")
+		return false
+	}
+	handelCaptcha(formInstance.FormInstanceID)
+	log.Println("验证码识别测试通过")
 	return true
 }

@@ -122,10 +122,9 @@ func main() {
 	// 打开浏览器
 	go func() {
 		time.Sleep(time.Second)
+		// windows
 		exec.Command("cmd", "/c", "start", webuiUrl).Start()
-		// linux
-		exec.Command("xdg-open", webuiUrl).Start()
-		// mac
+		// mac & linux
 		exec.Command("open", webuiUrl).Start()
 	}()
 	// go app.BootStrap()
