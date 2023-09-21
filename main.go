@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"macaoapply-auto/internal/app"
 	"macaoapply-auto/internal/model"
 	"macaoapply-auto/internal/router"
 	"macaoapply-auto/pkg/config"
@@ -104,11 +103,6 @@ func wsWriter() {
 	}
 }
 
-func reboot() {
-	log.Println("reboot")
-	app.BootStrap()
-}
-
 func main() {
 	// setup log websocket
 	writerProxy := &WriterProxy{}
@@ -128,10 +122,9 @@ func main() {
 	// 打开浏览器
 	go func() {
 		time.Sleep(time.Second)
+		// windows
 		exec.Command("cmd", "/c", "start", webuiUrl).Start()
-		// linux
-		exec.Command("xdg-open", webuiUrl).Start()
-		// mac
+		// mac & linux
 		exec.Command("open", webuiUrl).Start()
 	}()
 	// go app.BootStrap()

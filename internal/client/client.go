@@ -74,7 +74,15 @@ func SaveCookie() {
 	config.SaveConfig()
 }
 
+// onLogout 登出回调
+var OnLogout func()
+
 func SetToken(token string) {
+	if token == "" {
+		if OnLogout != nil {
+			OnLogout()
+		}
+	}
 	client.SetHeader("X-Access-Token", token)
 }
 
@@ -163,12 +171,10 @@ func Request(method string, url string, data jwt.MapClaims) (string, error) {
 		// 错误处理
 		// 80x 重新登录
 		if code == 801 || code == 802 || code == 803 {
-			log.Println("登录过期，1s后重新登录")
-			time.Sleep(time.Second)
-			// 重新登录
-			Login()
-			// 重新请求
-			return Request(method, url, data)
+			log.Println("登录过期，重新登录")
+			// 清除token
+			SetToken("")
+			return "", fmt.Errorf("登录过期，重新登录")
 		}
 		// 70x 验证码
 		if code == 701 || code == 702 || code == 703 {

@@ -11,6 +11,7 @@ import (
 	"macaoapply-auto/pkg/config"
 	"macaoapply-auto/pkg/imageText"
 	"macaoapply-auto/pkg/yunma"
+	"math"
 	"math/rand"
 	"os"
 	"strconv"
@@ -222,54 +223,48 @@ type Track struct {
 	T    int64
 }
 
+func generateBezierControls(distance int) (int, int, int, int) {
+	// P0 and P3 points are (0,0) and (distance, 0)
+	// For P1 and P2 we generate random points in the middle
+	p1 := distance/4 + rand.Intn(distance/4)
+	p2 := distance*3/4 + rand.Intn(distance/4)
+
+	return 0, p1, p2, distance
+}
+
+func bezier(t, p0, p1, p2, p3 float64) float64 {
+	return math.Pow(1.0-t, 3.0)*p0 +
+		3.0*t*math.Pow(1.0-t, 2.0)*p1 +
+		3.0*t*t*(1.0-t)*p2 +
+		t*t*t*p3
+}
+
 func GenerateTrack(distance int) []Track {
 	track := []Track{}
-	current := 0
-	mid := distance * 4 / 5
-	t := 0.2
-	v := 0.0
+	p0, p1, p2, p3 := generateBezierControls(distance)
+	py1, py2, py3, py4 := generateBezierControls(rand.Intn(10) + 5)
+
 	startTime := int64(2000 + rand.Intn(2000))
+	track = append(track, Track{0, 0, "down", startTime})
 
-	track = append(track, Track{
-		X:    0,
-		Y:    0,
-		Type: "down",
-		T:    startTime,
-	})
-
-	for {
-		a := 0.0
-		if current < mid {
-			a = 2.0
-		} else {
-			a = -3.0
+	deltaTime := startTime
+	var x, y int
+	var deltaT float64
+	// delta t 取决于距离 最大0.1 最小0.02
+	deltaT = -0.000308*float64(distance) + 0.1
+	for t := 0.0; t <= 1.0; t += deltaT {
+		// deltaModifier := (math.Sin((t-0.5)*math.Pi) + 1) / 2 // Values will range from 0 to 1
+		deltaTime += int64(math.Round((rand.Float64()*20 + 50)))
+		x = int(bezier(t, float64(p0), float64(p1), float64(p2), float64(p3)))
+		y = int(bezier(t, float64(py1), float64(py2), float64(py3), float64(py4)))
+		x = x + rand.Intn(5) - 2
+		if t == 1 {
+			x = distance
 		}
-		speed := rand.Float64()*5 + 10
-		startTime += int64(speed)
-
-		v0 := v
-		v = v0 + a*t
-		move := v0*t + 0.5*a*t*t
-		current += int(move)
-
-		track = append(track, Track{
-			X:    current + rand.Intn(2),
-			Y:    rand.Intn(2),
-			Type: "move",
-			T:    startTime,
-		})
-
-		if current >= distance {
-			break
-		}
+		track = append(track, Track{x, y, "move", deltaTime})
 	}
-
-	track = append(track, Track{
-		X:    distance,
-		Y:    rand.Intn(2),
-		Type: "up",
-		T:    startTime + 2,
-	})
+	deltaTime += int64(rand.Intn(10) + 50)
+	track = append(track, Track{distance, y + (rand.Intn(2) - 2), "up", deltaTime})
 
 	return track
 }
