@@ -75,6 +75,8 @@ func BootStrap(ctx context.Context) {
 	if !CheckConfig() {
 		return
 	}
+	// 加载配置
+	client.LoadCookie()
 	log.Println("启动...")
 	// 清空任务
 	ClearTask()
@@ -117,4 +119,32 @@ func BootStrap(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// 验证码定时刷新
+func setupCaptchaRefresh() {
+	// 每3min刷新一次
+	go func() {
+		for {
+			if !config.Config.EnableCaptchaRefresh {
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			if !Running() {
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			if formInstanceGlobe == nil {
+				time.Sleep(3 * time.Second)
+				continue
+			}
+			log.Println("刷新验证码...")
+			handelCaptchaNoCache(formInstanceGlobe.FormInstanceID)
+			time.Sleep(time.Duration(config.Config.CaptchaRefreshRound) * time.Minute)
+		}
+	}()
+}
+
+func init() {
+	setupCaptchaRefresh()
 }

@@ -193,8 +193,13 @@ func doCaptcha(formInstanceId string, processCaptcha ProcessCaptchaFunc) (cache.
 func handelCaptcha(formInstanceId string) cache.CaptchaData {
 	// 从缓存中获取
 	if cache.CaptchaCache != nil {
+		log.Println("缓存命中")
 		return cache.CaptchaCache
 	}
+	return handelCaptchaNoCache(formInstanceId)
+}
+
+func handelCaptchaNoCache(formInstanceId string) cache.CaptchaData {
 	for {
 		var data cache.CaptchaData
 		var err error
@@ -251,7 +256,7 @@ func GenerateTrack(distance int) []Track {
 	var x, y int
 	var deltaT float64
 	// delta t 取决于距离 最大0.1 最小0.02
-	deltaT = -0.000308*float64(distance) + 0.1
+	deltaT = -0.0004*float64(distance) + 0.1
 	for t := 0.0; t <= 1.0; t += deltaT {
 		// deltaModifier := (math.Sin((t-0.5)*math.Pi) + 1) / 2 // Values will range from 0 to 1
 		deltaTime += int64(math.Round((rand.Float64()*20 + 50)))

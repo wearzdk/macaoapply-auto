@@ -20,7 +20,6 @@ func ClearRequestCache() {
 }
 
 func ClearAllCache() {
-	ClearCaptchaCache()
 	ClearRequestCache()
 	log.Println("5min 清除缓存")
 }
